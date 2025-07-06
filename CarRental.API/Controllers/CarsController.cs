@@ -1,11 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using CarRental.Application.DTOs;
+using CarRental.Application.DTOs.CarDTOs;
+using CarRental.Application.DTOs.CommonDTOs;
+using CarRental.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using CarRental.Application.DTOs;
-using CarRental.Application.Services.Interfaces;
-using CarRental.Application.DTOs.CarDTOs;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace CarRental.API.Controllers
 {
@@ -19,20 +20,40 @@ namespace CarRental.API.Controllers
         {
             _carService = carService;
         }
-
+        /// <summary>
+        /// Get a paginated list of cars
+        /// </summary>
+        /// <param name="pageNumber">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 10)</param>
+        /// <param name="searchTerm">Search term for filtering</param>
+        /// <returns>Paginated list of cars</returns>
+        /// <response code="200">Returns the list of cars</response>
+        /// <response code="400">If the request is invalid</response>
         [HttpGet]
+        [ProducesResponseType(typeof(ApiResponse<PagedResponse<CarDto>>), 200)]
+        [ProducesResponseType(typeof(ApiResponse<PagedResponse<CarDto>>), 400)]
         public async Task<IActionResult> GetCars([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchTerm = null)
         {
             var response = await _carService.GetCarsAsync(pageNumber, pageSize, searchTerm);
             return response.Success ? Ok(response) : BadRequest(response);
         }
 
+        // <summary>
+        /// Get a specific car by ID
+        /// </summary>
+        /// <param name="id">Car ID</param>
+        /// <returns>Car details</returns>
+        /// <response code="200">Returns the car details</response>
+        /// <response code="404">If the car is not found</response>
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(ApiResponse<CarDto>), 200)]
+        [ProducesResponseType(typeof(ApiResponse<CarDto>), 404)]
         public async Task<IActionResult> GetCar(int id)
         {
             var response = await _carService.GetCarByIdAsync(id);
             return response.Success ? Ok(response) : NotFound(response);
         }
+
 
         [HttpGet("available")]
         public async Task<IActionResult> GetAvailableCars([FromQuery] CarAvailabilityDto availability)
@@ -48,8 +69,21 @@ namespace CarRental.API.Controllers
             return response.Success ? Ok(response) : BadRequest(response);
         }
 
+        /// <summary>
+        /// Create a new car
+        /// </summary>
+        /// <param name="createCarDto">Car creation data</param>
+        /// <returns>Created car</returns>
+        /// <response code="201">Returns the newly created car</response>
+        /// <response code="400">If the car data is invalid</response>
+        /// <response code="401">If the user is not authenticated</response>
+        /// <response code="403">If the user is not authorized</response>
         [HttpPost]
         [Authorize(Roles = "Admin,Employee")]
+        [ProducesResponseType(typeof(ApiResponse<CarDto>), 201)]
+        [ProducesResponseType(typeof(ApiResponse<CarDto>), 400)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(403)]
         public async Task<IActionResult> CreateCar([FromBody] CreateCarDto createCarDto)
         {
             if (!ModelState.IsValid)

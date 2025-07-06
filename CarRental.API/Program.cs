@@ -1,10 +1,6 @@
 // API/Program.cs
 using AutoMapper;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using System.Text;
+using CarRental.API.Middleware;
 using CarRental.Application.Interfaces;
 using CarRental.Application.Services.Implementation;
 using CarRental.Application.Services.Interfaces;
@@ -12,6 +8,12 @@ using CarRental.Infrastructure.Data;
 using CarRental.Infrastructure.Mappings;
 using CarRental.Infrastructure.Repositories;
 using CarRental.Infrastructure.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using System.Reflection;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,12 +24,7 @@ builder.Services.AddEndpointsApiExplorer();
 // Configure Swagger
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Car Rental API",
-        Version = "v1",
-        Description = "API for Car Rental Management System"
-    });
+   
 
     // Add JWT Authentication to Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -111,7 +108,28 @@ builder.Services.AddCors(options =>
                 .AllowAnyHeader();
         });
 });
+// ??? Program.cs? ??? Swagger configuration:
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Car Rental API",
+        Version = "v1",
+        Description = "API for Car Rental Management System",
+        Contact = new OpenApiContact
+        {
+            Name = "Your Name",
+            Email = "your.email@example.com"
+        }
+    });
 
+    // Add XML comments
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    c.IncludeXmlComments(xmlPath);
+
+    // JWT configuration...
+});
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -129,12 +147,27 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+// ?? Program.cs? ??? ??? app.UseHttpsRedirection();
+app.UseErrorHandling(); // ??? ???
+app.UseRequestLogging(); // ??? ???
 
+app.UseCors("AllowAll");
+app.UseAuthentication();
+app.UseAuthorization();
 // Apply migrations and seed data
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<CarRentalDbContext>();
     dbContext.Database.Migrate();
 }
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<CarRentalDbContext>();
 
+    // Apply migrations
+    await dbContext.Database.MigrateAsync();
+
+    // Seed data
+    await SeedData.SeedDatabaseAsync(dbContext);
+}
 app.Run();

@@ -12,10 +12,10 @@ namespace CarRental.Domain.Models
         public string Username { get; set; }
         public string Email { get; set; }
         public string PasswordHash { get; set; }
-        public string Role { get; set; } // Admin, Employee, Customer
+        public string Role { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }
-        public string RefreshToken { get; set; }
+        public string? RefreshToken { get; set; } // أضف ? لجعله nullable
         public DateTime? RefreshTokenExpiry { get; set; }
     }
 }
